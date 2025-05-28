@@ -444,7 +444,7 @@ function loadRanking() {
 
 loadRanking();
 
-const aimJoystick = document.getElementById("aimJoystick");
+const aimJoystickArea = document.getElementById("aimJoystickArea");
 let aimJoystickActive = false;
 let aimJoystickCenter = { x: 0, y: 0 };
 
