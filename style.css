@@ -135,24 +135,23 @@ canvas {
     transform: translate(-50%, -50%) scale(1);
   }
 }
-
 /* Controles mobile */
 #mobileControls {
   position: absolute;
   bottom: 20px;
   left: 0;
   right: 0;
-  display: flex; /* Alterado para flex */
+  display: flex;
   justify-content: space-between;
   padding: 0 20px;
   z-index: 20;
-  pointer-events: auto; /* Permitir interações */
+  pointer-events: none;
 }
 
 #joystickArea {
   width: 120px;
   height: 120px;
-  background: rgba(255, 255, 255, 0.1); /* Mantenha a cor de fundo */
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 50%;
   position: relative;
   pointer-events: auto;
@@ -162,7 +161,7 @@ canvas {
 #joystick {
   width: 60px;
   height: 60px;
-  background: gray; /* Alterado para cinza */
+  background: #fff;
   border-radius: 50%;
   position: absolute;
   top: 30px;
@@ -181,7 +180,7 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
-  pointer-events: auto; /* Permitir interações */
+  pointer-events: auto;
   touch-action: none;
 }
 
@@ -199,3 +198,24 @@ canvas {
     max-width: 100%;
   }
 }
+#aimJoystickArea {
+  width: 120px;
+  height: 120px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  position: relative;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#aimJoystick {
+  width: 60px;
+  height: 60px;
+  background: #fff;
+  border-radius: 50%;
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  transform: translate(-50%, -50%);
+}
+
