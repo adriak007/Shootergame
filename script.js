@@ -2,11 +2,15 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 // Carregamento das imagens
+const backgroundImg = new Image();
+backgroundImg.src = "background.jpg";
+
 const playerImg = new Image();
 playerImg.src = "player.png";
 
 const bulletImg = new Image();
 bulletImg.src = "bullet.png";
+
 
 const enemyImgs = [
   new Image(),
@@ -215,6 +219,9 @@ function update() {
   if (!isGameRunning || isPaused) return;
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Desenhar o background
+  ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
 
   // Movimento do player com WASD / setas
   if (keys["w"] || keys["arrowup"]) player.y -= player.speed;
