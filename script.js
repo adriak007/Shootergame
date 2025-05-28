@@ -443,3 +443,44 @@ function loadRanking() {
 }
 
 loadRanking();
+
+const aimJoystick = document.getElementById("aimJoystick");
+let aimJoystickActive = false;
+let aimJoystickCenter = { x: 0, y: 0 };
+
+// Adicionar eventos para o joystick de mira
+aimJoystickArea.addEventListener("touchstart", (e) => {
+  aimJoystickActive = true;
+  aimJoystickCenter.x = e.touches[0].clientX - aimJoystickArea.getBoundingClientRect().left;
+  aimJoystickCenter.y = e.touches[0].clientY - aimJoystickArea.getBoundingClientRect().top;
+});
+
+aimJoystickArea.addEventListener("touchmove", (e) => {
+  if (!aimJoystickActive) return;
+  const touchX = e.touches[0].clientX - aimJoystickArea.getBoundingClientRect().left;
+  const touchY = e.touches[0].clientY - aimJoystickArea.getBoundingClientRect().top;
+  const dx = touchX - aimJoystickCenter.x;
+  const dy = touchY - aimJoystickCenter.y;
+  const distance = Math.hypot(dx, dy);
+  
+  if (distance > 60) {
+    const angle = Math.atan2(dy, dx);
+    angle = angle < 0 ? angle + 2 * Math.PI : angle; // Ajustar o ângulo
+    angle = angle - Math.PI / 2; // Ajustar para a rotação correta
+    bullets.push({
+      x: player.x,
+      y: player.y,
+      dx: Math.cos(angle) * 10,
+      dy: Math.sin(angle) * 10,
+      radius: 20,
+      angle: angle
+    });
+    // Tocar som do tiro
+    sounds.shoot.currentTime = 0;
+    sounds.shoot.play();
+  }
+});
+
+aimJoystickArea.addEventListener("touchend", () => {
+  aimJoystickActive = false;
+});
