@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>TopDown Shooter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="ui">
+    <h1 id="score">Pontos: 0</h1>
+    <div class="button-group">
+      <button id="startBtn">Iniciar Jogo</button>
+      <button id="pauseBtn" style="display: none;">Pausar</button>
+      <button id="restartBtn" style="display: none;">Reiniciar</button>
+    </div>
+    <div id="ranking">
+      <h2>Ranking</h2>
+      <ol id="rankingList"></ol>
+      <button id="clearRankingBtn">Limpar Ranking</button>
+    </div>
+  </div>
+  <div id="mobileControls" style="display: none;">
+    <div id="joystickArea">
+      <div id="joystick"></div>
+    </div>
+    <div id="shootButton">Atirar</div>
+  </div>
+  <div class="game-over-text">GAME OVER</div>
+  <canvas id="gameCanvas"></canvas>
+  <script src="script.js"></script>
+</body>
+</html>
