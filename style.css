@@ -198,24 +198,3 @@ canvas {
     max-width: 100%;
   }
 }
-#aimJoystickArea {
-  width: 120px;
-  height: 120px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  position: relative;
-  pointer-events: auto;
-  touch-action: none;
-}
-
-#aimJoystick {
-  width: 60px;
-  height: 60px;
-  background: #fff;
-  border-radius: 50%;
-  position: absolute;
-  top: 30px;
-  left: 30px;
-  transform: translate(-50%, -50%);
-}
-
