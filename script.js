@@ -11,7 +11,6 @@ playerImg.src = "player.png";
 const bulletImg = new Image();
 bulletImg.src = "bullet.png";
 
-
 const enemyImgs = [
   new Image(),
   new Image(),
@@ -20,6 +19,10 @@ const enemyImgs = [
 enemyImgs[0].src = "enemy1.png";
 enemyImgs[1].src = "enemy2.png";
 enemyImgs[2].src = "enemy3.png";
+
+// Adicionar após o carregamento das imagens
+const meteorImg = new Image();
+meteorImg.src = "meteor.png"; // Você precisará adicionar uma imagem de meteoro
 
 // Carregamento dos sons
 const sounds = {
@@ -34,9 +37,9 @@ const sounds = {
 
 // Configurar músicas
 sounds.backgroundMusic.loop = true;
-sounds.backgroundMusic.volume = 0.3;
+sounds.backgroundMusic.volume = 0.5;
 sounds.menuMusic.loop = true;
-sounds.menuMusic.volume = 0.2;
+sounds.menuMusic.volume = 0.4;
 
 // Ajustar volume dos sons
 sounds.shoot.volume = 0.3;
@@ -44,6 +47,35 @@ sounds.hit.volume = 0.4;
 sounds.enemyHit.volume = 0.4;
 sounds.playerHit.volume = 0.5;
 sounds.gameOver.volume = 0.6;
+
+// Variável para controlar o estado do mute
+let isMuted = false;
+
+// Função para alternar o mute
+function toggleMute() {
+  isMuted = !isMuted;
+  const muteBtn = document.getElementById('muteBtn');
+  const icon = muteBtn.querySelector('i');
+  
+  // Atualizar ícone
+  if (isMuted) {
+    icon.classList.remove('bi-volume-up-fill');
+    icon.classList.add('bi-volume-mute-fill');
+    muteBtn.classList.add('muted');
+  } else {
+    icon.classList.remove('bi-volume-mute-fill');
+    icon.classList.add('bi-volume-up-fill');
+    muteBtn.classList.remove('muted');
+  }
+  
+  // Aplicar mute/unmute em todos os sons
+  Object.values(sounds).forEach(sound => {
+    sound.muted = isMuted;
+  });
+}
+
+// Adicionar evento de clique ao botão de mute
+document.getElementById('muteBtn').addEventListener('click', toggleMute);
 
 // Iniciar música do menu
 sounds.menuMusic.play();
@@ -65,20 +97,50 @@ let spawnDelay = 1500;
 let isGameRunning = false;
 let isPaused = false;
 
+// Adicionar após a declaração das variáveis globais
+let meteors = [];
+let meteorSpawnTimer;
+
 const player = {
   x: centerX,
   y: centerY,
   radius: 30, // Tamanho do player (30 = 60x60 pixels)
-  speed: 1,
+  baseSpeed: 1, // Velocidade base do player
+  speed: 1, // Velocidade atual (pode ser modificada por powerups)
   maxHealth: 3,
   health: 3
 };
 
 const keys = {};
 
+// Função para limpar todas as teclas
+function clearAllKeys() {
+  Object.keys(keys).forEach(key => {
+    keys[key] = false;
+  });
+}
+
+// Limpar teclas quando a janela perde o foco
+window.addEventListener("blur", () => {
+  console.log("Janela perdeu foco - limpando teclas");
+  clearAllKeys();
+});
+
+// Limpar teclas quando o jogador sai da página
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    console.log("Página oculta - limpando teclas");
+    clearAllKeys();
+  }
+});
+
 document.getElementById("startBtn").onclick = () => {
+  console.log("Botão iniciar clicado");
   if (!isGameRunning) {
+    console.log("Jogo não está rodando, iniciando...");
     startGame();
+  } else {
+    console.log("Jogo já está rodando");
   }
 };
 
@@ -108,27 +170,82 @@ document.getElementById("clearRankingBtn").onclick = () => {
 };
 
 window.addEventListener("keydown", (e) => {
+  if (!isGameRunning || isPaused) {
+    clearAllKeys();
+    return;
+  }
   keys[e.key.toLowerCase()] = true;
 });
 
 window.addEventListener("keyup", (e) => {
+  if (!isGameRunning || isPaused) {
+    clearAllKeys();
+    return;
+  }
   keys[e.key.toLowerCase()] = false;
 });
 
 canvas.addEventListener("mousemove", (e) => {
+  if (!isGameRunning || isPaused) return;
   angle = Math.atan2(e.clientY - player.y, e.clientX - player.x);
 });
 
 canvas.addEventListener("click", () => {
-  if (!isGameRunning) return;
-  bullets.push({
-    x: player.x,
-    y: player.y,
-    dx: Math.cos(angle) * 10,
-    dy: Math.sin(angle) * 10,
-    radius: 20, // Tamanho da bala (10 = 20x20 pixels)
-    angle: angle
-  });
+  if (!isGameRunning || isPaused) return;
+  
+  // Calcular a posição da frente da nave
+  const bulletRadius = powerupManager.isPowerupActive('big_bullet') ? 60 : 20;
+  const bulletOffset = player.radius + (bulletRadius * 0.5); // Reduzindo a distância para metade do raio da bala
+  
+  // Verificar se o powerup de tiro triplo está ativo
+  if (powerupManager.isPowerupActive('triple_shot')) {
+    // Tiro central
+    bullets.push({
+      x: player.x + Math.cos(angle) * bulletOffset,
+      y: player.y + Math.sin(angle) * bulletOffset,
+      dx: Math.cos(angle) * 10,
+      dy: Math.sin(angle) * 10,
+      radius: bulletRadius,
+      angle: angle,
+      damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+    });
+    
+    // Tiro esquerdo (15 graus)
+    const leftAngle = angle - Math.PI/20;
+    bullets.push({
+      x: player.x + Math.cos(leftAngle) * bulletOffset,
+      y: player.y + Math.sin(leftAngle) * bulletOffset,
+      dx: Math.cos(leftAngle) * 10,
+      dy: Math.sin(leftAngle) * 10,
+      radius: bulletRadius,
+      angle: leftAngle,
+      damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+    });
+    
+    // Tiro direito (15 graus)
+    const rightAngle = angle + Math.PI/20;
+    bullets.push({
+      x: player.x + Math.cos(rightAngle) * bulletOffset,
+      y: player.y + Math.sin(rightAngle) * bulletOffset,
+      dx: Math.cos(rightAngle) * 10,
+      dy: Math.sin(rightAngle) * 10,
+      radius: bulletRadius,
+      angle: rightAngle,
+      damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+    });
+  } else {
+    // Tiro normal
+    bullets.push({
+      x: player.x + Math.cos(angle) * bulletOffset,
+      y: player.y + Math.sin(angle) * bulletOffset,
+      dx: Math.cos(angle) * 10,
+      dy: Math.sin(angle) * 10,
+      radius: bulletRadius,
+      angle: angle,
+      damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+    });
+  }
+  
   // Tocar som do tiro
   sounds.shoot.currentTime = 0;
   sounds.shoot.play();
@@ -159,6 +276,45 @@ function spawnEnemy() {
   });
 }
 
+// Adicionar após a função spawnEnemy()
+function spawnMeteor() {
+  const edge = Math.floor(Math.random() * 4);
+  let x, y, dx, dy;
+  const speed = 2; // Reduzindo a velocidade do meteoro de 4 para 2
+
+  // Definir posição inicial e direção do meteoro
+  if (edge === 0) { // Esquerda
+    x = 0;
+    y = Math.random() * canvas.height;
+    dx = speed;
+    dy = 0;
+  } else if (edge === 1) { // Direita
+    x = canvas.width;
+    y = Math.random() * canvas.height;
+    dx = -speed;
+    dy = 0;
+  } else if (edge === 2) { // Topo
+    x = Math.random() * canvas.width;
+    y = 0;
+    dx = 0;
+    dy = speed;
+  } else { // Base
+    x = Math.random() * canvas.width;
+    y = canvas.height;
+    dx = 0;
+    dy = -speed;
+  }
+
+  meteors.push({
+    x,
+    y,
+    dx,
+    dy,
+    radius: 40,
+    trail: [] // Array para armazenar as posições anteriores
+  });
+}
+
 function drawHealthBar(enemy) {
   const barWidth = 30;
   const barHeight = 4;
@@ -186,21 +342,52 @@ function drawPlayerHealthBar() {
 }
 
 function togglePause() {
+  console.log("Tentando pausar/despausar. Estado atual:", isPaused);
   isPaused = !isPaused;
   const pauseBtn = document.getElementById("pauseBtn");
   const restartBtn = document.getElementById("restartBtn");
   
   if (isPaused) {
-    cancelAnimationFrame(gameInterval);
-    clearInterval(spawnTimer);
-    if (difficultyRamp) clearInterval(difficultyRamp);
+    console.log("Pausando jogo...");
+    // Limpar teclas ao pausar
+    clearAllKeys();
+    
+    // Parar todos os intervalos
+    if (gameInterval) {
+      cancelAnimationFrame(gameInterval);
+      gameInterval = null;
+    }
+    if (spawnTimer) {
+      clearInterval(spawnTimer);
+      spawnTimer = null;
+    }
+    if (difficultyRamp) {
+      clearInterval(difficultyRamp);
+      difficultyRamp = null;
+    }
+    if (meteorSpawnTimer) {
+      clearInterval(meteorSpawnTimer);
+      meteorSpawnTimer = null;
+    }
+    
+    // Parar powerup manager
+    window.powerupManager.stop();
+    
+    // Pausar música
     sounds.backgroundMusic.pause();
+    
+    // Atualizar interface
     pauseBtn.textContent = "Continuar";
     restartBtn.style.display = "inline-block";
   } else {
+    console.log("Despausando jogo...");
+    // Reiniciar o game loop
     gameInterval = requestAnimationFrame(update);
+    
+    // Reiniciar spawn de inimigos
     spawnTimer = setInterval(spawnEnemy, spawnDelay);
-    sounds.backgroundMusic.play();
+    
+    // Reiniciar dificuldade
     difficultyRamp = setInterval(() => {
       if (!isGameRunning || isPaused) {
         clearInterval(difficultyRamp);
@@ -210,18 +397,39 @@ function togglePause() {
       clearInterval(spawnTimer);
       spawnTimer = setInterval(spawnEnemy, spawnDelay);
     }, 3000);
+    
+    // Reiniciar spawn de meteoros
+    meteorSpawnTimer = setInterval(spawnMeteor, 1000);
+    
+    // Reiniciar powerup manager
+    window.powerupManager.start();
+    
+    // Retomar música
+    sounds.backgroundMusic.play();
+    
+    // Atualizar interface
     pauseBtn.textContent = "Pausar";
     restartBtn.style.display = "none";
   }
 }
 
 function update() {
-  if (!isGameRunning || isPaused) return;
+  if (!isGameRunning || isPaused) {
+    console.log("Update: jogo não está rodando ou está pausado");
+    return;
+  }
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   
   // Desenhar o background
   ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+  
+  // Adicionar camada escura semi-transparente
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Atualizar velocidade do player baseado no powerup
+  player.speed = powerupManager.isPowerupActive('speed_boost') ? player.baseSpeed * 2 : player.baseSpeed;
 
   // Movimento do player com WASD / setas
   if (keys["w"] || keys["arrowup"]) player.y -= player.speed;
@@ -239,15 +447,19 @@ function update() {
   ctx.rotate(angle + Math.PI/2);
   ctx.drawImage(
     playerImg, 
-    -player.radius, // Posição X = -radius
-    -player.radius, // Posição Y = -radius
-    player.radius * 2, // Largura = radius * 2
-    player.radius * 2  // Altura = radius * 2
+    -player.radius,
+    -player.radius,
+    player.radius * 2,
+    player.radius * 2
   );
   ctx.restore();
 
   // Barra de vida do player
   drawPlayerHealthBar();
+
+  // Atualizar powerups
+  console.log("Atualizando powerups no update");
+  window.powerupManager.update();
 
   // Balas
   bullets.forEach((b, bi) => {
@@ -301,7 +513,7 @@ function update() {
     bullets.forEach((b, bi) => {
       const dist = Math.hypot(b.x - e.x, b.y - e.y);
       if (dist < b.radius + e.radius) {
-        e.health -= 1;
+        e.health -= b.damage; // Usar o dano da bala
         bullets.splice(bi, 1);
         // Tocar som do inimigo sendo atingido
         sounds.enemyHit.currentTime = 0;
@@ -331,10 +543,97 @@ function update() {
     }
   });
 
+  // Meteoros
+  meteors.forEach((m, mi) => {
+    // Adicionar posição atual ao rastro
+    m.trail.push({ x: m.x, y: m.y });
+    // Manter apenas as últimas 10 posições
+    if (m.trail.length > 10) {
+      m.trail.shift();
+    }
+
+    m.x += m.dx;
+    m.y += m.dy;
+
+    // Calcular o ângulo baseado na direção do movimento
+    const meteorAngle = Math.atan2(m.dy, m.dx);
+
+    // Desenhar o rastro
+    m.trail.forEach((pos, index) => {
+      const alpha = index / m.trail.length; // Opacidade diminui conforme a posição é mais antiga
+      const size = m.radius * 0.6 * (1 - index/m.trail.length); // Tamanho reduzido para 60% do original
+      ctx.beginPath();
+      ctx.arc(pos.x, pos.y, size, 0, Math.PI * 2);
+      // Variação na intensidade usando uma função seno
+      const intensity = Math.sin(Date.now() * 0.005 + index) * 0.1 + 0.2;
+      ctx.fillStyle = `rgba(255, 165, 0, ${alpha * intensity})`; // Intensidade variável
+      ctx.fill();
+    });
+
+    // Desenhar meteoro com rotação
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(meteorAngle + Math.PI/4 + Math.PI);
+    ctx.drawImage(
+      meteorImg,
+      -m.radius,
+      -m.radius,
+      m.radius * 2,
+      m.radius * 2
+    );
+    ctx.restore();
+
+    // Remover meteoro quando sair da tela
+    if (m.x < -m.radius * 2 || m.x > canvas.width + m.radius * 2 ||
+        m.y < -m.radius * 2 || m.y > canvas.height + m.radius * 2) {
+      meteors.splice(mi, 1);
+    }
+
+    // Colisão meteoro-player
+    const distToPlayer = Math.hypot(m.x - player.x, m.y - player.y);
+    if (distToPlayer < m.radius + player.radius) {
+      meteors.splice(mi, 1);
+      player.health -= 1;
+      sounds.playerHit.currentTime = 0;
+      sounds.playerHit.play();
+      if (player.health <= 0) {
+        gameOver();
+      }
+    }
+  });
+
   if (isGameRunning) requestAnimationFrame(update);
 }
 
 function startGame() {
+  console.log("Iniciando jogo...");
+  // Limpar teclas ao iniciar
+  clearAllKeys();
+  
+  // Esconder o ranking durante o jogo
+  document.getElementById("ranking").style.display = "none";
+  
+  // Limpar todos os intervalos existentes
+  if (gameInterval) {
+    cancelAnimationFrame(gameInterval);
+    gameInterval = null;
+  }
+  if (spawnTimer) {
+    clearInterval(spawnTimer);
+    spawnTimer = null;
+  }
+  if (difficultyRamp) {
+    clearInterval(difficultyRamp);
+    difficultyRamp = null;
+  }
+  if (meteorSpawnTimer) {
+    clearInterval(meteorSpawnTimer);
+    meteorSpawnTimer = null;
+  }
+
+  // Parar powerup manager se estiver rodando
+  window.powerupManager.stop();
+
   // Esconder texto de Game Over se estiver visível
   const gameOverText = document.querySelector('.game-over-text');
   gameOverText.style.opacity = '0';
@@ -350,11 +649,6 @@ function startGame() {
       sound.currentTime = 0;
     }
   });
-
-  // Limpar todos os intervalos existentes
-  if (gameInterval) cancelAnimationFrame(gameInterval);
-  if (spawnTimer) clearInterval(spawnTimer);
-  if (difficultyRamp) clearInterval(difficultyRamp);
 
   // Reiniciar variáveis do jogo
   score = 0;
@@ -375,9 +669,15 @@ function startGame() {
   document.getElementById("pauseBtn").textContent = "Pausar";
 
   // Iniciar música de fundo
-  sounds.backgroundMusic.play();
+  try {
+    console.log("Tentando iniciar música de fundo");
+    sounds.backgroundMusic.play();
+  } catch (error) {
+    console.log("Erro ao iniciar música:", error);
+  }
 
   // Iniciar o jogo
+  console.log("Iniciando game loop");
   gameInterval = requestAnimationFrame(update);
   spawnTimer = setInterval(spawnEnemy, spawnDelay);
 
@@ -390,14 +690,47 @@ function startGame() {
     clearInterval(spawnTimer);
     spawnTimer = setInterval(spawnEnemy, spawnDelay);
   }, 3000);
+
+  // Adicionar após a inicialização dos outros timers
+  meteors = [];
+  meteorSpawnTimer = setInterval(spawnMeteor, 1000);
+
+  // Iniciar o powerup manager
+  console.log("Iniciando powerup manager no startGame");
+  window.powerupManager.start();
 }
 
 function gameOver() {
+  console.log("Game Over - Parando powerup manager");
   isGameRunning = false;
   isPaused = false;
-  cancelAnimationFrame(gameInterval);
-  clearInterval(spawnTimer);
-  if (difficultyRamp) clearInterval(difficultyRamp);
+  
+  // Mostrar o ranking quando o jogo termina
+  document.getElementById("ranking").style.display = "block";
+  
+  // Limpar teclas ao terminar o jogo
+  clearAllKeys();
+  
+  // Limpar todos os intervalos
+  if (gameInterval) {
+    cancelAnimationFrame(gameInterval);
+    gameInterval = null;
+  }
+  if (spawnTimer) {
+    clearInterval(spawnTimer);
+    spawnTimer = null;
+  }
+  if (difficultyRamp) {
+    clearInterval(difficultyRamp);
+    difficultyRamp = null;
+  }
+  if (meteorSpawnTimer) {
+    clearInterval(meteorSpawnTimer);
+    meteorSpawnTimer = null;
+  }
+  
+  // Parar powerup manager
+  window.powerupManager.stop();
   
   // Parar todos os sons
   Object.values(sounds).forEach(sound => {
@@ -405,8 +738,9 @@ function gameOver() {
     sound.currentTime = 0;
   });
 
-  // Mostrar texto de Game Over
+  // Mostrar texto de Game Over e pontuação
   const gameOverText = document.querySelector('.game-over-text');
+  gameOverText.innerHTML = `GAME OVER<br><span class="final-score">${score} pontos</span>`;
   gameOverText.style.opacity = '1';
 
   // Tocar som de game over
@@ -417,18 +751,12 @@ function gameOver() {
   document.getElementById("pauseBtn").style.display = "none";
   document.getElementById("restartBtn").style.display = "none";
 
-  // Esperar o som de game over terminar antes de mostrar o alerta
-  setTimeout(() => {
-    // Esconder texto de Game Over
-    gameOverText.style.opacity = '0';
-    
-    alert("Fim de jogo! Pontuação final: " + score);
-    saveScore(score);
-    loadRanking();
-    
-    // Reiniciar música do menu após o alerta
-    sounds.menuMusic.play();
-  }, 2000); // Aumentado para 2 segundos para dar tempo de ver o texto
+  // Salvar pontuação e atualizar ranking
+  saveScore(score);
+  loadRanking();
+  
+  // Reiniciar música do menu
+  sounds.menuMusic.play();
 }
 
 function saveScore(newScore) {
@@ -450,3 +778,174 @@ function loadRanking() {
 }
 
 loadRanking();
+
+// Adicionar no início do arquivo, após as declarações iniciais
+window.onload = function() {
+  // Mostrar o ranking no menu inicial
+  document.getElementById("ranking").style.display = "block";
+  // ... rest of onload function if any ...
+};
+
+// Adicionar após as declarações iniciais
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let joystickActive = false;
+let joystickAngle = 0;
+
+// Função para inicializar controles móveis
+function initMobileControls() {
+  if (!isMobile) return;
+
+  // Mostrar controles móveis
+  document.getElementById('mobileControls').style.display = 'flex';
+
+  // Configurar joystick
+  const joystickArea = document.getElementById('joystickArea');
+  const joystick = document.getElementById('joystick');
+  let joystickStartX = 0;
+  let joystickStartY = 0;
+
+  joystickArea.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    joystickActive = true;
+    const touch = e.touches[0];
+    const rect = joystickArea.getBoundingClientRect();
+    joystickStartX = rect.left + rect.width / 2;
+    joystickStartY = rect.top + rect.height / 2;
+    updateJoystick(touch.clientX, touch.clientY);
+    joystick.classList.add('active');
+  });
+
+  joystickArea.addEventListener('touchmove', (e) => {
+    if (!joystickActive) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    updateJoystick(touch.clientX, touch.clientY);
+  });
+
+  joystickArea.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    joystickActive = false;
+    joystick.style.transform = 'translate(-50%, -50%)';
+    joystick.classList.remove('active');
+    joystickAngle = 0;
+  });
+
+  function updateJoystick(touchX, touchY) {
+    const dx = touchX - joystickStartX;
+    const dy = touchY - joystickStartY;
+    const distance = Math.min(60, Math.sqrt(dx * dx + dy * dy));
+    joystickAngle = Math.atan2(dy, dx);
+    
+    const moveX = Math.cos(joystickAngle) * distance;
+    const moveY = Math.sin(joystickAngle) * distance;
+    
+    joystick.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px))`;
+  }
+
+  // Configurar botões de movimento
+  const movementButtons = {
+    'upBtn': 'w',
+    'leftBtn': 'a',
+    'rightBtn': 'd',
+    'downBtn': 's'
+  };
+
+  Object.entries(movementButtons).forEach(([btnId, key]) => {
+    const btn = document.getElementById(btnId);
+    
+    btn.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      keys[key] = true;
+    });
+
+    btn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      keys[key] = false;
+    });
+  });
+
+  // Adicionar evento de toque para atirar
+  canvas.addEventListener('touchstart', (e) => {
+    if (!isGameRunning || isPaused) return;
+    e.preventDefault();
+    
+    // Usar o ângulo do joystick para atirar
+    if (joystickActive) {
+      angle = joystickAngle;
+    }
+    
+    // Verificar se o powerup de tiro triplo está ativo
+    if (powerupManager.isPowerupActive('triple_shot')) {
+      // Tiro central
+      bullets.push({
+        x: player.x + Math.cos(angle) * bulletOffset,
+        y: player.y + Math.sin(angle) * bulletOffset,
+        dx: Math.cos(angle) * 10,
+        dy: Math.sin(angle) * 10,
+        radius: bulletRadius,
+        angle: angle,
+        damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+      });
+      
+      // Tiro esquerdo (15 graus)
+      const leftAngle = angle - Math.PI/20;
+      bullets.push({
+        x: player.x + Math.cos(leftAngle) * bulletOffset,
+        y: player.y + Math.sin(leftAngle) * bulletOffset,
+        dx: Math.cos(leftAngle) * 10,
+        dy: Math.sin(leftAngle) * 10,
+        radius: bulletRadius,
+        angle: leftAngle,
+        damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+      });
+      
+      // Tiro direito (15 graus)
+      const rightAngle = angle + Math.PI/20;
+      bullets.push({
+        x: player.x + Math.cos(rightAngle) * bulletOffset,
+        y: player.y + Math.sin(rightAngle) * bulletOffset,
+        dx: Math.cos(rightAngle) * 10,
+        dy: Math.sin(rightAngle) * 10,
+        radius: bulletRadius,
+        angle: rightAngle,
+        damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+      });
+    } else {
+      // Tiro normal
+      bullets.push({
+        x: player.x + Math.cos(angle) * bulletOffset,
+        y: player.y + Math.sin(angle) * bulletOffset,
+        dx: Math.cos(angle) * 10,
+        dy: Math.sin(angle) * 10,
+        radius: bulletRadius,
+        angle: angle,
+        damage: powerupManager.isPowerupActive('big_bullet') ? 3 : 1
+      });
+    }
+    
+    // Tocar som do tiro
+    sounds.shoot.currentTime = 0;
+    sounds.shoot.play();
+  });
+}
+
+// Chamar a função de inicialização quando o jogo começar
+window.onload = function() {
+  initMobileControls();
+  // Mostrar o ranking no menu inicial
+  document.getElementById("ranking").style.display = "block";
+};
+
+// Adicionar após as declarações iniciais
+window.addEventListener("orientationchange", () => {
+  if (window.orientation === 0 || window.orientation === 180) {
+    console.log("Dispositivo em modo retrato");
+  } else {
+    console.log("Dispositivo em modo paisagem");
+  }
+});
+
+// Verificar orientação inicial
+if (window.orientation === 0 || window.orientation === 180) {
+  console.log("Dispositivo iniciou em modo retrato");
+}

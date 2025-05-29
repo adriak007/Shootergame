@@ -2,33 +2,59 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+  <meta name="screen-orientation" content="landscape">
+  <meta name="orientation" content="landscape">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>TopDown Shooter</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div id="ui">
-    <h1 id="score">Pontos: 0</h1>
-    <div class="button-group">
-      <button id="startBtn">Iniciar Jogo</button>
-      <button id="pauseBtn" style="display: none;">Pausar</button>
-      <button id="restartBtn" style="display: none;">Reiniciar</button>
-    </div>
-    <div id="ranking">
-      <h2>Ranking</h2>
-      <ol id="rankingList"></ol>
-      <button id="clearRankingBtn">Limpar Ranking</button>
-    </div>
+  <div class="rotate-warning">
+    <i class="bi bi-phone-rotate"></i>
+    <p>Por favor, gire seu celular para o modo paisagem</p>
   </div>
-  
-  <div id="mobileControls" style="display: none;">
-    <div id="joystickArea">
-      <div id="joystick"></div>
+
+  <div id="gameContainer">
+    <div id="ui">
+      <h1 id="score">Pontos: 0</h1>
+      <div class="button-group">
+        <button id="startBtn">Iniciar Jogo</button>
+        <button id="pauseBtn" style="display: none;">Pausar</button>
+        <button id="restartBtn" style="display: none;">Reiniciar</button>
+      </div>
+      <div id="ranking">
+        <h2>Ranking</h2>
+        <ol id="rankingList"></ol>
+        <button id="clearRankingBtn">Limpar Ranking</button>
+      </div>
     </div>
-    <div id="shootButton">Atirar</div>
+    
+    <div id="mobileControls" style="display: none;">
+      <div id="joystickArea">
+        <div id="joystick"></div>
+      </div>
+      
+      <div id="movementControls">
+        <button id="upBtn" class="movement-btn"><i class="bi bi-arrow-up"></i></button>
+        <button id="leftBtn" class="movement-btn"><i class="bi bi-arrow-left"></i></button>
+        <button id="rightBtn" class="movement-btn"><i class="bi bi-arrow-right"></i></button>
+        <button id="downBtn" class="movement-btn"><i class="bi bi-arrow-down"></i></button>
+      </div>
+    </div>
+
+    <button id="muteBtn" class="btn btn-light position-fixed bottom-0 end-0 m-3">
+      <i class="bi bi-volume-up-fill"></i>
+    </button>
+
+    <div class="game-over-text">GAME OVER</div>
+    <canvas id="gameCanvas"></canvas>
   </div>
-  <div class="game-over-text">GAME OVER</div>
-  <canvas id="gameCanvas"></canvas>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="powerups.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
