@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gerador de Screenshot</title>
+    <style>
+        body { 
+            background: #333; 
+            color: white; 
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        canvas {
+            border: 2px solid #666;
+            margin: 20px 0;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gerador de Screenshot para TopDown Shooter</h1>
+    <canvas id="screenshot" width="1280" height="720"></canvas>
+    <br>
+    <button onclick="downloadScreenshot()">Baixar Screenshot</button>
+
+    <script>
+        const canvas = document.getElementById('screenshot');
+        const ctx = canvas.getContext('2d');
+        
+        // Fundo preto
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, 1280, 720);
+        
+        // Desenhar elementos do jogo
+        // Nave do jogador
+        ctx.fillStyle = '#00ff00';
+        ctx.beginPath();
+        ctx.moveTo(640, 360);
+        ctx.lineTo(600, 420);
+        ctx.lineTo(680, 420);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Inimigos
+        ctx.fillStyle = '#ff0000';
+        ctx.beginPath();
+        ctx.arc(400, 200, 30, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(800, 500, 30, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Balas
+        ctx.fillStyle = '#ffff00';
+        ctx.beginPath();
+        ctx.arc(500, 300, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(700, 400, 10, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Título do jogo
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('TopDown Shooter', 640, 100);
+        
+        // Pontuação
+        ctx.font = '24px Arial';
+        ctx.fillText('Pontos: 1000', 640, 150);
+
+        function downloadScreenshot() {
+            const link = document.createElement('a');
+            link.download = 'gameplay.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html> 
