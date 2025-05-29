@@ -41,24 +41,41 @@
     <button onclick="downloadAll()">Baixar Todos os Ícones</button>
 
     <script>
-        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+        const sizes = [192, 512];
         const container = document.getElementById('iconContainer');
 
-        function drawIcon(canvas, size) {
+        function drawIcon(canvas, size, isMaskable = false) {
             const ctx = canvas.getContext('2d');
             
             // Fundo preto
             ctx.fillStyle = '#000000';
             ctx.fillRect(0, 0, size, size);
             
-            // Nave espacial
-            ctx.fillStyle = '#00ff00';
-            ctx.beginPath();
-            ctx.moveTo(size/2, size/4);
-            ctx.lineTo(size/4, size*3/4);
-            ctx.lineTo(size*3/4, size*3/4);
-            ctx.closePath();
-            ctx.fill();
+            if (isMaskable) {
+                // Para ícone maskable, deixar espaço nas bordas
+                const padding = size * 0.1;
+                const center = size / 2;
+                const radius = (size - padding * 2) / 2;
+                
+                // Nave espacial
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.moveTo(center, center - radius * 0.5);
+                ctx.lineTo(center - radius * 0.5, center + radius * 0.5);
+                ctx.lineTo(center + radius * 0.5, center + radius * 0.5);
+                ctx.closePath();
+                ctx.fill();
+            } else {
+                // Para ícone normal, usar todo o espaço
+                // Nave espacial
+                ctx.fillStyle = '#00ff00';
+                ctx.beginPath();
+                ctx.moveTo(size/2, size/4);
+                ctx.lineTo(size/4, size*3/4);
+                ctx.lineTo(size*3/4, size*3/4);
+                ctx.closePath();
+                ctx.fill();
+            }
             
             // Detalhes da nave
             ctx.fillStyle = '#ffffff';
@@ -85,18 +102,18 @@
             canvas.style.height = '100px';
             
             const label = document.createElement('div');
-            label.textContent = `${size}x${size}`;
+            label.textContent = `${size}x${size} (${size === 512 ? 'maskable' : 'any'})`;
             
             const button = document.createElement('button');
             button.textContent = 'Baixar';
-            button.onclick = () => downloadIcon(canvas, `icon-${size}x${size}.png`);
+            button.onclick = () => downloadIcon(canvas, `icon_${size}.png`);
             
             div.appendChild(canvas);
             div.appendChild(label);
             div.appendChild(button);
             container.appendChild(div);
             
-            drawIcon(canvas, size);
+            drawIcon(canvas, size, size === 512);
         });
 
         function downloadIcon(canvas, filename) {
@@ -109,7 +126,7 @@
         function downloadAll() {
             sizes.forEach(size => {
                 const canvas = container.querySelector(`canvas[width="${size}"]`);
-                downloadIcon(canvas, `icon-${size}x${size}.png`);
+                downloadIcon(canvas, `icon_${size}.png`);
             });
         }
     </script>
