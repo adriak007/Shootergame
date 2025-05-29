@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gerador de Ícones</title>
+</head>
+<body>
+    <canvas id="icon192" width="192" height="192"></canvas>
+    <canvas id="icon512" width="512" height="512"></canvas>
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Fundo preto
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Nave espacial
+            ctx.fillStyle = '#00ff00';
+            ctx.beginPath();
+            ctx.moveTo(size/2, size/4);
+            ctx.lineTo(size/4, size*3/4);
+            ctx.lineTo(size*3/4, size*3/4);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Detalhes da nave
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Efeito de brilho
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Desenhar ícones
+        drawIcon(document.getElementById('icon192'), 192);
+        drawIcon(document.getElementById('icon512'), 512);
+
+        // Função para baixar os ícones
+        function downloadIcon(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Botões para baixar
+        const download192 = document.createElement('button');
+        download192.textContent = 'Baixar ícone 192x192';
+        download192.onclick = () => downloadIcon(document.getElementById('icon192'), 'icon-192.png');
+        document.body.appendChild(download192);
+
+        const download512 = document.createElement('button');
+        download512.textContent = 'Baixar ícone 512x512';
+        download512.onclick = () => downloadIcon(document.getElementById('icon512'), 'icon-512.png');
+        document.body.appendChild(download512);
+    </script>
+</body>
+</html> 
