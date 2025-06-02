@@ -105,8 +105,8 @@ const player = {
   x: centerX,
   y: centerY,
   radius: 30, // Tamanho do player (30 = 60x60 pixels)
-  baseSpeed: 1, // Velocidade base do player
-  speed: 1, // Velocidade atual (pode ser modificada por powerups)
+  baseSpeed: 3, // Velocidade base do player
+  speed: 3, // Velocidade atual (pode ser modificada por powerups)
   maxHealth: 3,
   health: 3
 };
